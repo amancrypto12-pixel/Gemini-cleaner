@@ -50,9 +50,14 @@ jobs:
         run: |
           python3 - <<'PY'
           import re
-          t = open('build.log', errors='replace').read().splitlines()[-40:]
-          msg = "%0A".join(re.sub(r'[\r%]', '', l)[:300] for l in t)
-          print("::error title=Last build log lines::" + msg)
+          ansi = re.compile(r'\x1b\[[0-9;]*m')
+          L = [ansi.sub('', l) for l in open('build.log', errors='replace').read().splitlines()]
+          k = next((n for n, l in enumerate(L) if 'Buildozer failed to execute' in l), len(L))
+          L = [l for l in L[:k] if not l.startswith('#     ')]
+          hits = [l for l in L if re.search(r'error|failed|not found|no such|traceback|exception|cannot', l, re.I)]
+          chunk = hits[-12:] + ['-----'] + L[-18:]
+          msg = "%0A".join(re.sub(r'[\r%]', '', l)[:300] for l in chunk)
+          print("::error title=Build error lines::" + msg)
           PY
 
       - name: Upload APK artifact
