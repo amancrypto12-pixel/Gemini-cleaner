@@ -5,6 +5,7 @@ package.domain = org.local
 
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,txt
+source.include_patterns = ffbin/*
 source.exclude_dirs = .github, __pycache__, bin, .buildozer, tests
 
 version = 1.0
@@ -26,4 +27,4 @@ p4a.branch = develop
 
 [buildozer]
 log_level = 2
-warn_on_root = 1
+warn_on_root = 0

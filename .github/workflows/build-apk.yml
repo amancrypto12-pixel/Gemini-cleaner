@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: kivy/buildozer:latest
+      options: --user root
     steps:
       - uses: actions/checkout@v4
 
@@ -38,7 +39,21 @@ jobs:
           ls -la ffbin
 
       - name: Build debug APK
-        run: buildozer android debug
+        env:
+          BUILDOZER_WARN_ON_ROOT: "0"
+        run: |
+          set -o pipefail
+          buildozer -v android debug 2>&1 | tee build.log
+
+      - name: Show build error
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import re
+          t = open('build.log', errors='replace').read().splitlines()[-40:]
+          msg = "%0A".join(re.sub(r'[\r%]', '', l)[:300] for l in t)
+          print("::error title=Last build log lines::" + msg)
+          PY
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
