@@ -15,7 +15,7 @@ orientation = portrait
 fullscreen = 0
 
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,READ_MEDIA_VIDEO
-android.api = 30
+android.api = 33
 android.minapi = 24
 android.ndk_api = 24
 android.archs = arm64-v8a
