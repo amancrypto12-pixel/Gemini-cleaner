@@ -1,0 +1,54 @@
+name: Build APK
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: git safe dir
+        run: git config --global --add safe.directory '*'
+
+      - name: Fetch Android ffmpeg + ffprobe into ffbin/
+        run: |
+          set -eux
+          command -v unzip >/dev/null || (apt-get update && apt-get install -y unzip)
+          mkdir -p ffbin
+          url=$(curl -sL https://api.github.com/repos/hzw1199/Android-FFmpeg-Prebuilt/releases/latest \
+                | grep -oE 'https://[^"]+' | grep -iE '\.(zip|tar\.gz)$' | grep -i arm64 | head -n1 || true)
+          echo "asset: ${url:-none}"
+          if [ -n "${url:-}" ]; then
+            curl -sL -o /tmp/ff.pkg "$url"
+            mkdir -p /tmp/ffx
+            case "$url" in
+              *.zip) unzip -o /tmp/ff.pkg -d /tmp/ffx ;;
+              *)     tar xf /tmp/ff.pkg -C /tmp/ffx ;;
+            esac
+            find /tmp/ffx -type f -name ffmpeg  -exec cp {} ffbin/ffmpeg  \;
+            find /tmp/ffx -type f -name ffprobe -exec cp {} ffbin/ffprobe \;
+          fi
+          chmod +x ffbin/* 2>/dev/null || true
+          ls -la ffbin
+
+      - name: Build debug APK
+        run: buildozer android debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-cleaner-apk
+          path: bin/*.apk
+          if-no-files-found: error
+
+      - name: Attach APK to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bin/*.apk
